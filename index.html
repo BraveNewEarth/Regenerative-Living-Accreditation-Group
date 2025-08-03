@@ -1,0 +1,876 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regenerative Living Accreditation Directory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #00929a;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 146, 154, 0.8) 0%, rgba(0, 146, 154, 0.6) 50%, rgba(0, 146, 154, 0.9) 100%);
+            backdrop-filter: blur(1px);
+            z-index: -1;
+        }
+
+        .header {
+            background: #004f5b;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .title {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            color: #004f5b;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .directory-container {
+            padding: 40px;
+            min-height: calc(100vh - 160px);
+            position: relative;
+        }
+
+        .node {
+            position: absolute;
+            width: 220px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            z-index: 10;
+            text-align: center;
+            position: relative;
+        }
+
+        .node:hover {
+            transform: scale(1.05);
+        }
+
+        .node:active {
+            cursor: grabbing;
+        }
+
+        .node-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            border: 3px solid white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        .node-info {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .node-name {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .node-org {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .node-skills, .node-interests {
+            margin-bottom: 8px;
+        }
+
+        .node-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 3px;
+        }
+
+        .node-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            justify-content: center;
+        }
+
+        .node-skill-tag {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(78, 205, 196, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .node-interest-tag {
+            background: linear-gradient(135deg, #44A08D 0%, #2E7D6C 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(68, 160, 141, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .node.highlighted {
+            transform: scale(1.1);
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.8);
+        }
+
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: rgba(78, 205, 196, 0.3);
+            z-index: 1;
+            transform-origin: left center;
+            transition: all 0.3s ease;
+        }
+
+        .connection.highlighted {
+            background: #4ECDC4;
+            height: 4px;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.8);
+        }
+
+        .sector-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 79, 91, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .sector-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .sector-icon {
+            width: 60px;
+            height: 60px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 50%;
+        }
+
+        .sector-icon:hover {
+            transform: scale(1.1);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sector-icon.water { background-image: url('./images/Water.svg'); }
+        .sector-icon.land { background-image: url('./images/Land.svg'); }
+        .sector-icon.food { background-image: url('./images/Food.svg'); }
+        .sector-icon.energy { background-image: url('./images/ENERGY.svg'); }
+
+        .sector-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #2c3e50;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            z-index: 110;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sector-icon:hover .sector-label {
+            opacity: 1;
+            top: -45px;
+        }
+
+        .bottom-right-logo {
+            width: 80px;
+            height: 60px;
+            background: url('./images/bottomrightlogo.png') center/contain no-repeat;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            margin-left: 15px;
+        }
+
+        .bottom-right-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .mission-text {
+            position: absolute;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateX(-50%) translateY(10px);
+            transition: all 0.3s ease;
+            text-align: center;
+            z-index: 110;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .bottom-right-logo:hover .mission-text {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .sector-hotspot:hover {
+            background: rgba(78, 205, 196, 0.2);
+        }
+
+        .sector-hotspot-label {
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            transform: translateY(10px);
+        }
+
+        .sector-hotspot:hover .sector-hotspot-label {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .title {
+                font-size: 18px;
+            }
+            
+            .logo {
+                height: 60px;
+            }
+            
+            .node {
+                width: 180px;
+            }
+            
+            .sector-footer {
+                flex-direction: column;
+                padding: 15px;
+                gap: 15px;
+            }
+            
+            .sector-icons {
+                gap: 20px;
+            }
+            
+            .sector-icon {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .bottom-right-logo {
+                width: 60px;
+                height: 45px;
+                margin-left: 0;
+            }
+            
+            .mission-text {
+                width: 280px;
+                font-size: 12px;
+                bottom: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-section">
+        <div class="logo">
+            <img src="./images/farleftlogo.png" alt="RLA Logo">
+        </div>
+            <div class="title">Regenerative Living Accreditation Directory</div>
+        </div>
+        <div class="controls">
+            <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px;">
+                <span id="participantCount">3</span> participants • 
+                <span id="connectionCount">0</span> connections
+            </div>
+        </div>
+    </div>
+
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+        <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">-</button>
+        <button class="zoom-btn" onclick="autoZoom()" title="Auto Fit" style="font-size: 14px;">⌂</button>
+    </div>
+
+    <div class="directory-container" id="directoryContainer">
+        <!-- Participants will be loaded here -->
+    </div>
+
+    <div class="sector-footer">
+        <div class="sector-icons">
+            <div class="sector-icon water">
+                <div class="sector-label">Water</div>
+            </div>
+            <div class="sector-icon land">
+                <div class="sector-label">Land</div>
+            </div>
+            <div class="sector-icon food">
+                <div class="sector-label">Food</div>
+            </div>
+            <div class="sector-icon energy">
+                <div class="sector-label">Energy</div>
+            </div>
+        </div>
+        <div class="bottom-right-logo">
+            <div class="mission-text">
+                <strong>to accelerate the world's transition to regenerative, distributed energy, water, and food systems</strong>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple data storage - reads from localStorage
+        let participants = JSON.parse(localStorage.getItem('rla_participants') || '[{"id": 1, "name": "Bruce Weaver", "organization": "Regen 8", "linkedin": "https://www.linkedin.com/in/bruceweaverlandpropertymanager/", "profileImage": "./images/BruceWeaver.Headshot.png", "skills": "Estate Ranch Management, Grazing, Permaculture, Biochar Production", "interests": "Regenerative Leadership, Regenerative Grazing, Permaculture, Agroforestry, Silvopasture"}, {"id": 2, "name": "Brittany Mish", "organization": "5th World", "linkedin": "https://www.linkedin.com/in/brittany-mish-ab981aa4/", "profileImage": "./images/brittany.jpeg", "skills": "Organization, Research, Project Management, Portfolio Management, Microsoft Suite, Analytical Skills, Customer Service, Time Management", "interests": "Asset Optimization, Business Efficiency, Unconventional Organization, Helping Businesses, Human Asset Development"}, {"id": 3, "name": "Rob Avis", "organization": "5th World (Chief Engineering Officer)", "linkedin": "https://www.linkedin.com/in/rob-avis-09b5a2281/", "profileImage": "./images/rib.jpeg", "skills": "Permaculture Design, Regenerative Agriculture, Water Systems Design, Broad Acre Water Harvesting, Irrigation Engineering, Passive Solar Greenhouse Design, Renewable Energy Systems, Low Energy Consumption Systems, Thermo and Fluid Dynamics, Biology Integration, Land Management, Mechanical Engineering, Ecosystem Design, Education", "interests": "Land Regeneration, Sustainable Food Production, Renewable Energy, Water Security, Ecosystem Complexity, Multi-generational Farming, Regenerative Farm Design, Integrating Engineering and Biology, Teaching Regenerative Practices"}]');
+
+        let draggedNode = null;
+        let highlightedConnections = [];
+        let currentZoom = 1;
+        let isDragging = false;
+
+        // Initialize the application
+        function init() {
+            loadAllParticipants();
+            updateStats();
+            calculateConnections();
+        }
+
+        // Load all participants from localStorage and render them
+        function loadAllParticipants() {
+            const container = document.getElementById('directoryContainer');
+            container.innerHTML = ''; // Clear existing nodes
+            usedPositions = []; // Reset position tracking
+            
+            if (participants.length === 0) {
+                container.innerHTML = `
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #7f8c8d;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🌱</div>
+                        <div style="font-size: 24px; margin-bottom: 10px;">No participants yet</div>
+                        <div>Access the admin panel to add participants</div>
+                    </div>
+                `;
+                return;
+            }
+
+            participants.forEach((participant, index) => {
+                renderParticipantNode(participant, index);
+            });
+        }
+
+        // Render a single participant node
+        function renderParticipantNode(participant, index) {
+            const container = document.getElementById('directoryContainer');
+            const nodeId = participant.id === 1 ? 'bruceNode' : `node-${participant.id}`;
+            
+            // Get initials for fallback
+            const initials = participant.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            // Split skills and interests
+            const skills = participant.skills.split(',').map(s => s.trim()).filter(s => s).slice(0, 4);
+            const interests = participant.interests.split(',').map(s => s.trim()).filter(s => s).slice(0, 4);
+            
+            // Calculate non-overlapping position
+            const position = calculateNonOverlappingPosition(index);
+            
+            const nodeHTML = `
+                <div class="node" style="left: ${position.x}px; top: ${position.y}px; transform: scale(${currentZoom});" id="${nodeId}" onclick="highlightParticipant('${participant.id}')" onmouseenter="highlightParticipant('${participant.id}')" onmouseleave="clearHighlight()">
+                    <div class="node-image" ${participant.profileImage ? `style="background-image: url('${participant.profileImage}')"` : ''}>
+                        ${!participant.profileImage ? initials : ''}
+                    </div>
+                    <div class="node-info">
+                        <div class="node-name">${participant.name}</div>
+                        <div class="node-org">${participant.organization || ''}</div>
+                        <div class="node-skills">
+                            <div class="node-label">Skills</div>
+                            <div class="node-tags">
+                                ${skills.map(skill => `<span class="node-skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="node-interests">
+                            <div class="node-label">Interests</div>
+                            <div class="node-tags">
+                                ${interests.map(interest => `<span class="node-interest-tag">${interest}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', nodeHTML);
+            const newNode = document.getElementById(nodeId);
+            makeDraggable(newNode);
+        }
+
+        // Calculate non-overlapping position for participants
+        let usedPositions = [];
+
+        function calculateNonOverlappingPosition(index) {
+            const containerRect = document.getElementById('directoryContainer').getBoundingClientRect();
+            const containerWidth = containerRect.width;
+            const containerHeight = containerRect.height - 120; // Account for bottom header
+            
+            const nodeWidth = 220;
+            const nodeHeight = 200; // Approximate height of cards
+            const minSpacing = 50; // Minimum space between cards
+            
+            let position;
+            let attempts = 0;
+            const maxAttempts = 100;
+            
+            do {
+                if (participants.length <= 3) {
+                    // For small groups, use a simple horizontal layout
+                    position = {
+                        x: 100 + (index * (nodeWidth + minSpacing)),
+                        y: containerHeight / 2 - nodeHeight / 2
+                    };
+                } else if (participants.length <= 12) {
+                    // For medium groups, use a grid layout
+                    const cols = Math.ceil(Math.sqrt(participants.length));
+                    const row = Math.floor(index / cols);
+                    const col = index % cols;
+                    
+                    const startX = (containerWidth - (cols * (nodeWidth + minSpacing))) / 2;
+                    const startY = 100;
+                    
+                    position = {
+                        x: Math.max(50, startX + col * (nodeWidth + minSpacing)),
+                        y: Math.max(50, startY + row * (nodeHeight + minSpacing))
+                    };
+                } else {
+                    // For large groups, use smart circular placement with multiple rings
+                    const ringsNeeded = Math.ceil(participants.length / 8);
+                    const currentRing = Math.floor(index / 8);
+                    const positionInRing = index % 8;
+                    const participantsInRing = Math.min(8, participants.length - currentRing * 8);
+                    
+                    const baseRadius = Math.min(containerWidth, containerHeight) * 0.2;
+                    const radius = baseRadius + (currentRing * (nodeWidth + minSpacing));
+                    
+                    const centerX = containerWidth / 2;
+                    const centerY = containerHeight / 2;
+                    
+                    const angle = (positionInRing / participantsInRing) * 2 * Math.PI;
+                    
+                    position = {
+                        x: Math.max(50, Math.min(containerWidth - nodeWidth - 50, centerX + radius * Math.cos(angle) - nodeWidth / 2)),
+                        y: Math.max(50, Math.min(containerHeight - nodeHeight - 50, centerY + radius * Math.sin(angle) - nodeHeight / 2))
+                    };
+                }
+                
+                // Check for collisions with existing positions
+                const hasCollision = usedPositions.some(usedPos => {
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - usedPos.x, 2) + 
+                        Math.pow(position.y - usedPos.y, 2)
+                    );
+                    return distance < (nodeWidth + minSpacing);
+                });
+                
+                if (!hasCollision) {
+                    usedPositions.push(position);
+                    break;
+                }
+                
+                // If collision detected, try a slightly different position
+                position.x += Math.random() * 100 - 50;
+                position.y += Math.random() * 100 - 50;
+                
+                // Keep within bounds
+                position.x = Math.max(50, Math.min(containerWidth - nodeWidth - 50, position.x));
+                position.y = Math.max(50, Math.min(containerHeight - nodeHeight - 50, position.y));
+                
+                attempts++;
+            } while (attempts < maxAttempts);
+            
+            return position;
+        }
+
+        // Enhanced drag functionality with touch support
+        function makeDraggable(element) {
+            let startX, startY, initialX, initialY;
+            
+            // Mouse events
+            element.addEventListener('mousedown', handleStart);
+            
+            // Touch events for iPad/mobile
+            element.addEventListener('touchstart', handleStart, { passive: false });
+            
+            function handleStart(e) {
+                e.preventDefault();
+                isDragging = true;
+                draggedNode = element;
+                
+                const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                
+                startX = clientX;
+                startY = clientY;
+                initialX = element.offsetLeft;
+                initialY = element.offsetTop;
+                
+                // Add move and end listeners
+                if (e.type === 'touchstart') {
+                    document.addEventListener('touchmove', handleMove, { passive: false });
+                    document.addEventListener('touchend', handleEnd);
+                } else {
+                    document.addEventListener('mousemove', handleMove);
+                    document.addEventListener('mouseup', handleEnd);
+                }
+            }
+            
+            function handleMove(e) {
+                if (!isDragging || draggedNode !== element) return;
+                
+                e.preventDefault();
+                
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                
+                const deltaX = clientX - startX;
+                const deltaY = clientY - startY;
+                
+                element.style.left = (initialX + deltaX) + 'px';
+                element.style.top = (initialY + deltaY) + 'px';
+                
+                // Update connections in real-time
+                calculateConnections();
+            }
+            
+            function handleEnd(e) {
+                isDragging = false;
+                draggedNode = null;
+                
+                // Remove listeners
+                if (e.type === 'touchend') {
+                    document.removeEventListener('touchmove', handleMove);
+                    document.removeEventListener('touchend', handleEnd);
+                } else {
+                    document.removeEventListener('mousemove', handleMove);
+                    document.removeEventListener('mouseup', handleEnd);
+                }
+            }
+        }
+
+        // Zoom functionality
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.2, 2);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.2, 0.5);
+            applyZoom();
+        }
+
+        function autoZoom() {
+            // Auto-fit based on participant count
+            if (participants.length <= 5) {
+                currentZoom = 1;
+            } else if (participants.length <= 20) {
+                currentZoom = 0.8;
+            } else if (participants.length <= 50) {
+                currentZoom = 0.6;
+            } else {
+                currentZoom = 0.4;
+            }
+            applyZoom();
+        }
+
+        function applyZoom() {
+            document.querySelectorAll('.node').forEach(node => {
+                const currentTransform = node.style.transform;
+                const scaleRegex = /scale\([^)]*\)/g;
+                const baseTransform = currentTransform.replace(scaleRegex, '').trim();
+                node.style.transform = `${baseTransform} scale(${currentZoom})`.trim();
+            });
+            
+            // Adjust node positioning for zoom
+            if (currentZoom !== 1) {
+                loadAllParticipants();
+            }
+        }
+
+        // Highlight participant and connections
+        function highlightParticipant(participantId) {
+            clearHighlight();
+            
+            const participant = participants.find(p => p.id == participantId);
+            if (!participant) return;
+            
+            const nodeId = participant.id === 1 ? 'bruceNode' : `node-${participant.id}`;
+            const targetNode = document.getElementById(nodeId);
+            if (targetNode) targetNode.classList.add('highlighted');
+            
+            // Find and highlight connections
+            highlightedConnections = [];
+            for (let i = 0; i < participants.length; i++) {
+                const p1 = participants[i];
+                if (p1.id == participantId) continue;
+                
+                const skills1 = participant.skills.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                const skills2 = p1.skills.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                const interests1 = participant.interests.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                const interests2 = p1.interests.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                
+                const sharedSkills = skills1.filter(skill => skills2.includes(skill));
+                const sharedInterests = interests1.filter(interest => interests2.includes(interest));
+                
+                if (sharedSkills.length > 0 || sharedInterests.length > 0) {
+                    const connectedNodeId = p1.id === 1 ? 'bruceNode' : `node-${p1.id}`;
+                    const connectedNode = document.getElementById(connectedNodeId);
+                    if (connectedNode) connectedNode.classList.add('highlighted');
+                    
+                    highlightedConnections.push({
+                        p1: participant.id,
+                        p2: p1.id,
+                        shared: [...sharedSkills, ...sharedInterests]
+                    });
+                }
+            }
+            
+            // Highlight connection lines
+            document.querySelectorAll('.connection').forEach(conn => {
+                const isHighlighted = highlightedConnections.some(hc => 
+                    (hc.p1 == participantId || hc.p2 == participantId)
+                );
+                if (isHighlighted) conn.classList.add('highlighted');
+            });
+        }
+
+        // Clear highlights
+        function clearHighlight() {
+            document.querySelectorAll('.node').forEach(node => node.classList.remove('highlighted'));
+            document.querySelectorAll('.connection').forEach(conn => conn.classList.remove('highlighted'));
+            highlightedConnections = [];
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('participantCount').textContent = participants.length;
+        }
+
+        // Calculate connections between nodes
+        function calculateConnections() {
+            const container = document.getElementById('directoryContainer');
+            
+            // Remove existing connections
+            container.querySelectorAll('.connection').forEach(conn => conn.remove());
+            
+            let connectionCount = 0;
+            
+            // Create connections between nodes with shared skills/interests
+            for (let i = 0; i < participants.length; i++) {
+                for (let j = i + 1; j < participants.length; j++) {
+                    const p1 = participants[i];
+                    const p2 = participants[j];
+                    
+                    const skills1 = p1.skills.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                    const skills2 = p2.skills.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                    const interests1 = p1.interests.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                    const interests2 = p2.interests.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+                    
+                    const sharedSkills = skills1.filter(skill => skills2.includes(skill));
+                    const sharedInterests = interests1.filter(interest => interests2.includes(interest));
+                    
+                    if (sharedSkills.length > 0 || sharedInterests.length > 0) {
+                        const node1Id = p1.id === 1 ? 'bruceNode' : `node-${p1.id}`;
+                        const node2Id = p2.id === 1 ? 'bruceNode' : `node-${p2.id}`;
+                        
+                        const node1 = document.getElementById(node1Id);
+                        const node2 = document.getElementById(node2Id);
+                        
+                        if (node1 && node2) {
+                            createConnection(node1, node2, [...sharedSkills, ...sharedInterests]);
+                            connectionCount++;
+                        }
+                    }
+                }
+            }
+            
+            document.getElementById('connectionCount').textContent = connectionCount;
+        }
+
+        // Create visual connection between two nodes
+        function createConnection(node1, node2, shared) {
+            const container = document.getElementById('directoryContainer');
+            const rect1 = node1.getBoundingClientRect();
+            const rect2 = node2.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            const x1 = rect1.left - containerRect.left + rect1.width / 2;
+            const y1 = rect1.top - containerRect.top + rect1.height / 2;
+            const x2 = rect2.left - containerRect.left + rect2.width / 2;
+            const y2 = rect2.top - containerRect.top + rect2.height / 2;
+            
+            const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            
+            const connection = document.createElement('div');
+            connection.className = 'connection';
+            connection.style.left = x1 + 'px';
+            connection.style.top = y1 + 'px';
+            connection.style.width = distance + 'px';
+            connection.style.transform = `rotate(${angle}deg)`;
+            connection.title = `Shared: ${shared.join(', ')}`;
+            
+            container.appendChild(connection);
+        }
+
+        // Auto-refresh data every 5 seconds to sync with admin changes
+        setInterval(() => {
+            const newData = localStorage.getItem('rla_participants');
+            if (newData) {
+                const newParticipants = JSON.parse(newData);
+                if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
+                    participants = newParticipants;
+                    loadAllParticipants();
+                    updateStats();
+                    calculateConnections();
+                }
+            }
+        }, 5000);
+
+        // Initialize app when page loads
+        window.addEventListener('load', init);
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                loadAllParticipants();
+                calculateConnections();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
